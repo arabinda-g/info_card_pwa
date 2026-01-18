@@ -2,14 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light dark;
-}
-
+html,
 body {
   margin: 0;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #f3efef;
+  color: #111111;
 }
 
 .safe-area-top {
@@ -25,6 +22,6 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #7c3aed;
   outline-offset: 2px;
 }
