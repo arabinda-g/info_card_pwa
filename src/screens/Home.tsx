@@ -536,9 +536,6 @@ function UserInfoForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              {buildQuickAction(MdQrCode, "Share QR", "#22c55e", onShareQR)}
-            </div>
           </div>
         ) : (
           <div>
