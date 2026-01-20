@@ -1,6 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal } from "../components/Modal";
-import { getBoolean, getString, storageKeys } from "../utils/storage";
+import {
+  getBoolean,
+  getString,
+  getWebAuthnCredentialId,
+  storageKeys
+} from "../utils/storage";
 
 type LockScreenProps = {
   onUnlock: () => void;
@@ -16,9 +21,56 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
     []
   );
   const savedPin = useMemo(() => getString(storageKeys.userPin), []);
+  const credentialId = useMemo(() => getWebAuthnCredentialId(), []);
   const [error, setError] = useState<string | null>(null);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pin, setPin] = useState("");
+
+  const isWebAuthnSupported = () =>
+    Boolean(window.PublicKeyCredential && window.crypto?.getRandomValues);
+
+  const toBase64Url = (buffer: ArrayBuffer) =>
+    btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+
+  const fromBase64Url = (value: string) => {
+    const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padLength = padded.length % 4 ? 4 - (padded.length % 4) : 0;
+    const normalized = padded + "=".repeat(padLength);
+    const binary = atob(normalized);
+    return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  };
+
+  const authenticateBiometric = async () => {
+    if (!isWebAuthnSupported() || !credentialId) return;
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const assertion = (await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: [
+            { id: fromBase64Url(credentialId), type: "public-key" }
+          ],
+          userVerification: "required",
+          timeout: 60000
+        }
+      })) as PublicKeyCredential | null;
+
+      if (assertion) {
+        onUnlock();
+      }
+    } catch (err) {
+      setError((err as Error).message || "Biometric authentication failed.");
+    }
+  };
+
+  useEffect(() => {
+    if (showFaceId || showFingerprint) {
+      authenticateBiometric();
+    }
+  }, [showFaceId, showFingerprint]);
 
   const handleUnlock = () => {
     if (!savedPin || pin === savedPin) {
@@ -38,6 +90,8 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
           <div className="mb-6">
             {showFaceId ? (
               <p className="text-lg font-medium">Looking for Face ID...</p>
+            ) : showFingerprint ? (
+              <p className="text-lg font-medium">Looking for Fingerprint...</p>
             ) : null}
           </div>
         )}

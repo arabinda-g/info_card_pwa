@@ -27,6 +27,7 @@ import {
   MdPersonOutline,
   MdPhone,
   MdQrCode,
+  MdQrCodeScanner,
   MdRefresh,
   MdSave,
   MdShare,
@@ -320,6 +321,16 @@ export default function Home() {
           >
             <MdQrCode className="text-lg text-green-600" />
             QR Code
+          </button>
+          <button
+            className="flex w-full items-center gap-3 py-2 text-left text-sm"
+            onClick={() => {
+              setIsDrawerOpen(false);
+              navigate("/scan");
+            }}
+          >
+            <MdQrCodeScanner className="text-lg text-purple-600" />
+            Scan QR
           </button>
           <div className="my-4 border-t border-black/10" />
           <button className="flex w-full items-center gap-3 py-2 text-left text-sm" onClick={handleExport}>

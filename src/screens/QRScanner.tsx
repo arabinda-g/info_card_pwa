@@ -1,5 +1,11 @@
-import { useMemo, useState } from "react";
-import { MdArrowBack, MdPause, MdPlayArrow, MdQrCodeScanner } from "react-icons/md";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BrowserQRCodeReader } from "@zxing/browser";
+import {
+  MdArrowBack,
+  MdPause,
+  MdPlayArrow,
+  MdQrCodeScanner
+} from "react-icons/md";
 import { Modal } from "../components/Modal";
 import { useNavigate } from "react-router-dom";
 
@@ -75,15 +81,52 @@ const getFieldLabel = (key: string) => {
 
 export default function QRScanner() {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const readerRef = useRef<BrowserQRCodeReader | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const [scannedData, setScannedData] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const parsed = useMemo(() => parseVCardData(scannedData), [scannedData]);
 
   const showResults = () => {
     setShowDialog(true);
   };
+
+  useEffect(() => {
+    if (!readerRef.current) {
+      readerRef.current = new BrowserQRCodeReader();
+    }
+
+    let cancelled = false;
+
+    const start = async () => {
+      if (!isScanning || !videoRef.current) return;
+      setCameraError(null);
+      try {
+        const result = await readerRef.current.decodeOnceFromVideoDevice(
+          undefined,
+          videoRef.current
+        );
+        if (!cancelled && result?.getText()) {
+          setScannedData(result.getText());
+          setShowDialog(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCameraError((err as Error).message || "Camera access failed.");
+        }
+      }
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      readerRef.current?.reset();
+    };
+  }, [isScanning]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -112,17 +155,28 @@ export default function QRScanner() {
           Position the QR code within the frame
         </div>
 
-        <div className="relative h-64 w-64 rounded-2xl border-2 border-white">
+        <div className="relative h-64 w-64 overflow-hidden rounded-2xl border-2 border-white">
+          <video
+            ref={videoRef}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+          />
           <div className="absolute left-0 top-0 h-5 w-5 border-l-4 border-t-4 border-purple-500" />
           <div className="absolute right-0 top-0 h-5 w-5 border-r-4 border-t-4 border-purple-500" />
           <div className="absolute bottom-0 left-0 h-5 w-5 border-b-4 border-l-4 border-purple-500" />
           <div className="absolute bottom-0 right-0 h-5 w-5 border-b-4 border-r-4 border-purple-500" />
-          <div className="flex h-full items-center justify-center text-5xl text-white/30">
-            <MdQrCodeScanner />
-          </div>
+          {!isScanning ? (
+            <div className="absolute inset-0 flex items-center justify-center text-5xl text-white/30">
+              <MdQrCodeScanner />
+            </div>
+          ) : null}
         </div>
 
         <div className="w-full max-w-md space-y-3 text-sm text-white/80">
+          {cameraError ? (
+            <p className="text-center text-xs text-red-300">{cameraError}</p>
+          ) : null}
           <p className="text-center">
             Paste QR data below to preview scanned contact information.
           </p>
@@ -177,6 +231,8 @@ export default function QRScanner() {
               onClick={() => {
                 setShowDialog(false);
                 setScannedData("");
+                setIsScanning(false);
+                setTimeout(() => setIsScanning(true), 50);
               }}
             >
               Scan Another

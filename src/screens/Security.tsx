@@ -2,7 +2,17 @@ import { useMemo, useState } from "react";
 import { MdArrowBack, MdFace, MdFingerprint, MdPin } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../components/Modal";
-import { getBoolean, getString, setBoolean, setString, storageKeys } from "../utils/storage";
+import {
+  getBoolean,
+  getString,
+  getWebAuthnCredentialId,
+  getWebAuthnUserId,
+  setBoolean,
+  setString,
+  setWebAuthnCredentialId,
+  setWebAuthnUserId,
+  storageKeys
+} from "../utils/storage";
 
 export default function Security() {
   const navigate = useNavigate();
@@ -17,8 +27,66 @@ export default function Security() {
   const [pinDraft, setPinDraft] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const pinStatus = useMemo(() => (pin ? "PIN is set" : ""), [pin]);
+
+  const isWebAuthnSupported = () =>
+    Boolean(window.PublicKeyCredential && window.crypto?.getRandomValues);
+
+  const toBase64Url = (buffer: ArrayBuffer) =>
+    btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+
+  const fromBase64Url = (value: string) => {
+    const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padLength = padded.length % 4 ? 4 - (padded.length % 4) : 0;
+    const normalized = padded + "=".repeat(padLength);
+    const binary = atob(normalized);
+    return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  };
+
+  const ensureWebAuthnCredential = async () => {
+    if (!isWebAuthnSupported()) {
+      throw new Error("Biometric authentication is not supported here.");
+    }
+
+    let credentialId = getWebAuthnCredentialId();
+    if (credentialId) return credentialId;
+
+    let userId = getWebAuthnUserId();
+    if (!userId) {
+      const randomId = crypto.getRandomValues(new Uint8Array(16));
+      userId = toBase64Url(randomId.buffer);
+      setWebAuthnUserId(userId);
+    }
+
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const credential = (await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: "IDSecure" },
+        user: {
+          id: fromBase64Url(userId),
+          name: "local-user",
+          displayName: "IDSecure User"
+        },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: { userVerification: "required" },
+        timeout: 60000
+      }
+    })) as PublicKeyCredential | null;
+
+    if (!credential) {
+      throw new Error("Failed to register biometric credential.");
+    }
+
+    credentialId = toBase64Url(credential.rawId);
+    setWebAuthnCredentialId(credentialId);
+    return credentialId;
+  };
 
   const handleSavePin = () => {
     if (pinDraft.length !== 4 || pinDraft !== pinConfirm) {
@@ -31,6 +99,36 @@ export default function Security() {
     setPinConfirm("");
     setError(null);
     setShowPinDialog(false);
+    setStatus("PIN saved.");
+  };
+
+  const handleEnableBiometrics = async (next: boolean, type: "fingerprint" | "face") => {
+    setStatus(null);
+    setError(null);
+    try {
+      if (next) {
+        await ensureWebAuthnCredential();
+        setStatus("Biometrics enabled.");
+      } else {
+        setStatus("Biometrics disabled.");
+      }
+      if (type === "fingerprint") {
+        setUseFingerprint(next);
+        setBoolean(storageKeys.useFingerprint, next);
+      } else {
+        setUseFaceId(next);
+        setBoolean(storageKeys.useFaceId, next);
+      }
+    } catch (err) {
+      setError((err as Error).message || "Biometric setup failed.");
+      if (type === "fingerprint") {
+        setUseFingerprint(false);
+        setBoolean(storageKeys.useFingerprint, false);
+      } else {
+        setUseFaceId(false);
+        setBoolean(storageKeys.useFaceId, false);
+      }
+    }
   };
 
   return (
@@ -85,9 +183,7 @@ export default function Security() {
               className="h-5 w-5 accent-purple-700"
               checked={useFingerprint}
               onChange={(event) => {
-                const next = event.target.checked;
-                setUseFingerprint(next);
-                setBoolean(storageKeys.useFingerprint, next);
+                handleEnableBiometrics(event.target.checked, "fingerprint");
               }}
             />
           </label>
@@ -109,14 +205,23 @@ export default function Security() {
               className="h-5 w-5 accent-purple-700"
               checked={useFaceId}
               onChange={(event) => {
-                const next = event.target.checked;
-                setUseFaceId(next);
-                setBoolean(storageKeys.useFaceId, next);
+                handleEnableBiometrics(event.target.checked, "face");
               }}
             />
           </label>
         </div>
       </main>
+      {(status || error) && (
+        <div
+          className={`mx-6 mb-6 rounded-xl border px-4 py-3 text-sm ${
+            error
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-green-200 bg-green-50 text-green-700"
+          }`}
+        >
+          {error || status}
+        </div>
+      )}
 
       <Modal isOpen={showPinDialog} onClose={() => setShowPinDialog(false)}>
         <div className="space-y-4 text-left text-black">
