@@ -20,7 +20,6 @@ import {
   MdLanguage,
   MdLink,
   MdLocationCity,
-  MdLock,
   MdMenu,
   MdPayment,
   MdPerson,
@@ -302,16 +301,6 @@ export default function Home() {
             className="flex w-full items-center gap-3 py-2 text-left text-sm"
             onClick={() => {
               setIsDrawerOpen(false);
-              navigate("/security");
-            }}
-          >
-            <MdLock className="text-lg text-black" />
-            Security
-          </button>
-          <button
-            className="flex w-full items-center gap-3 py-2 text-left text-sm"
-            onClick={() => {
-              setIsDrawerOpen(false);
               if (!hasAnyData) {
                 showMessage("Please save your information first", "warn");
                 return;
@@ -497,7 +486,7 @@ function UserInfoForm({
 
   const shouldShowField = (hint: string) => {
     if (!isViewMode) return true;
-    return userData[hint]?.trim().length;
+    return Boolean(userData[hint]?.trim().length);
   };
 
   return (

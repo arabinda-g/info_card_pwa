@@ -1,10 +1,5 @@
 export const storageKeys = {
   hasSeenGetStarted: "has_seen_get_started",
-  userPin: "user_pin",
-  useFingerprint: "use_fingerprint",
-  useFaceId: "use_faceid",
-  webAuthnCredentialId: "webauthn_credential_id",
-  webAuthnUserId: "webauthn_user_id",
   userData: "user_data",
   profileImage: "profile_image"
 };
@@ -58,26 +53,3 @@ export function setProfileImage(base64: string) {
   }
 }
 
-export function getWebAuthnCredentialId() {
-  return localStorage.getItem(storageKeys.webAuthnCredentialId) ?? "";
-}
-
-export function setWebAuthnCredentialId(value: string) {
-  if (value) {
-    localStorage.setItem(storageKeys.webAuthnCredentialId, value);
-  } else {
-    localStorage.removeItem(storageKeys.webAuthnCredentialId);
-  }
-}
-
-export function getWebAuthnUserId() {
-  return localStorage.getItem(storageKeys.webAuthnUserId) ?? "";
-}
-
-export function setWebAuthnUserId(value: string) {
-  if (value) {
-    localStorage.setItem(storageKeys.webAuthnUserId, value);
-  } else {
-    localStorage.removeItem(storageKeys.webAuthnUserId);
-  }
-}

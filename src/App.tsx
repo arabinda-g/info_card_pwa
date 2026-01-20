@@ -2,22 +2,16 @@ import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import FrontPage from "./screens/FrontPage";
 import Home from "./screens/Home";
-import LockScreen from "./screens/LockScreen";
 import NotFound from "./screens/NotFound";
 import QRDisplay from "./screens/QRDisplay";
 import QRScanner from "./screens/QRScanner";
-import Security from "./screens/Security";
-import { getBoolean, getString, setBoolean, storageKeys } from "./utils/storage";
+import { getBoolean, setBoolean, storageKeys } from "./utils/storage";
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenGetStarted, setHasSeenGetStarted] = useState(false);
-  const [pinExists, setPinExists] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
-    const pin = getString(storageKeys.userPin);
-    setPinExists(Boolean(pin));
     setHasSeenGetStarted(getBoolean(storageKeys.hasSeenGetStarted, false));
     setIsLoading(false);
   }, []);
@@ -41,14 +35,9 @@ export default function App() {
     );
   }
 
-  if (pinExists && !unlocked) {
-    return <LockScreen onUnlock={() => setUnlocked(true)} />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/security" element={<Security />} />
       <Route path="/qr" element={<QRDisplay />} />
       <Route path="/scan" element={<QRScanner />} />
       <Route path="*" element={<NotFound />} />
