@@ -366,56 +366,96 @@ export default function Home() {
           </div>
         </div>
         <div className="border-t border-black/10 px-6 py-4">
-          <button
-            className="flex w-full items-center gap-3 py-2 text-left text-sm"
-            onClick={() => {
-              setIsDrawerOpen(false);
-              if (!hasAnyData) {
-                showMessage("Please save your information first", "warn");
-                return;
-              }
-              navigate("/qr");
-            }}
-          >
-            <MdQrCode className="text-lg text-green-600" />
-            QR Code
-          </button>
-          <button
-            className="flex w-full items-center gap-3 py-2 text-left text-sm"
-            onClick={() => {
-              setIsDrawerOpen(false);
-              navigate("/scan");
-            }}
-          >
-            <MdQrCodeScanner className="text-lg text-purple-600" />
-            Scan QR
-          </button>
-          <div className="my-4 border-t border-black/10" />
-          <button className="flex w-full items-center gap-3 py-2 text-left text-sm" onClick={handleExport}>
-            <MdFileUpload className="text-lg text-blue-600" />
-            Export Profile
-          </button>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              onChange={handleImport}
-              className="hidden"
-              aria-label="Import profile"
-            />
-            <button
-              className="flex w-full items-center gap-3 py-2 text-left text-sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <MdFileDownload className="text-lg text-purple-600" />
-              Import Profile
-            </button>
+          <div className="text-xs font-semibold uppercase tracking-widest text-black/50">
+            Quick actions
           </div>
-          <button className="flex w-full items-center gap-3 py-2 text-left text-sm" onClick={handleClear}>
-            <MdDeleteForever className="text-lg text-red-600" />
-            Clear All Data
-          </button>
+          <div className="mt-3 space-y-4">
+            <div className="rounded-2xl bg-black/[0.03] p-2 shadow-sm">
+              <button
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  if (!hasAnyData) {
+                    showMessage("Please save your information first", "warn");
+                    return;
+                  }
+                  navigate("/qr");
+                }}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-100 text-green-700 shadow-sm">
+                  <MdQrCode className="text-lg" />
+                </span>
+                <span className="flex-1">QR Code</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-green-700/80">
+                  Share
+                </span>
+              </button>
+              <button
+                className="group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  navigate("/scan");
+                }}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 text-purple-700 shadow-sm">
+                  <MdQrCodeScanner className="text-lg" />
+                </span>
+                <span className="flex-1">Scan QR</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-700/80">
+                  Import
+                </span>
+              </button>
+            </div>
+
+            <div className="rounded-2xl bg-black/[0.03] p-2 shadow-sm">
+              <button
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
+                onClick={handleExport}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700 shadow-sm">
+                  <MdFileUpload className="text-lg" />
+                </span>
+                <span className="flex-1">Export Profile</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-700/80">
+                  Backup
+                </span>
+              </button>
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json"
+                  onChange={handleImport}
+                  className="hidden"
+                  aria-label="Import profile"
+                />
+                <button
+                  className="group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 shadow-sm">
+                    <MdFileDownload className="text-lg" />
+                  </span>
+                  <span className="flex-1">Import Profile</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-700/80">
+                    Restore
+                  </span>
+                </button>
+              </div>
+              <button
+                className="group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-white"
+                onClick={handleClear}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 shadow-sm">
+                  <MdDeleteForever className="text-lg" />
+                </span>
+                <span className="flex-1">Clear All Data</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-red-700/80">
+                  Reset
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
