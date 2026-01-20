@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
-import { MdArrowBack, MdShare } from "react-icons/md";
+import { MdArrowBack, MdHome, MdShare } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { getProfileImage, getUserData } from "../utils/storage";
 
@@ -191,6 +191,15 @@ export default function QRDisplay() {
             ) : null}
           </div>
         </div>
+
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2B2322] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-black/15"
+          onClick={() => navigate("/")}
+          aria-label="Back to Home"
+        >
+          <MdHome className="text-lg" />
+          Back to Home
+        </button>
       </main>
     </div>
   );
