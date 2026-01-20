@@ -7,6 +7,12 @@ body {
   margin: 0;
   background: #f3efef;
   color: #111111;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  touch-action: manipulation;
 }
 
 .safe-area-top {
