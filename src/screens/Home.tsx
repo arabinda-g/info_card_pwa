@@ -351,11 +351,16 @@ export default function Home() {
       </div>
 
       <div className="relative">
-        <div className="absolute left-4 top-4 z-20 rounded-xl bg-white/90 p-3 shadow-md">
-          <button onClick={() => setIsDrawerOpen(true)}>
-            <MdMenu className="text-2xl text-black/70" />
-          </button>
-        </div>
+        <button
+          type="button"
+          aria-label="Open menu"
+          className={`fixed left-4 top-4 rounded-xl bg-white/90 p-3 shadow-md ${
+            isDrawerOpen ? "hidden" : "z-30"
+          }`}
+          onClick={() => setIsDrawerOpen(true)}
+        >
+          <MdMenu className="text-2xl text-black/70" />
+        </button>
         <UserInfoForm
           isViewMode={isViewMode}
           userData={userData}
