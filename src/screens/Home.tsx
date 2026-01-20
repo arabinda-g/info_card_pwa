@@ -419,6 +419,11 @@ export default function Home() {
               return updated;
             });
           }}
+          onReorderPinned={(fields) => {
+            const normalized = normalizePinnedFields(fields);
+            setPinnedFieldsStorage(normalized);
+            setPinnedFields(normalized);
+          }}
           onUpdateField={updateField}
           onSave={saveUserInfo}
           onSwitchToEdit={() => setIsViewMode(false)}
@@ -476,6 +481,7 @@ type UserInfoFormProps = {
   profileImage: string;
   pinnedFields: string[];
   onTogglePin: (key: string) => void;
+  onReorderPinned: (fields: string[]) => void;
   onUpdateField: (key: string, value: string) => void;
   onSave: () => void;
   onSwitchToEdit: () => void;
@@ -492,6 +498,7 @@ function UserInfoForm({
   profileImage,
   pinnedFields,
   onTogglePin,
+  onReorderPinned,
   onUpdateField,
   onSave,
   onSwitchToEdit,
@@ -508,6 +515,7 @@ function UserInfoForm({
     value: string;
     Icon: React.ComponentType<{ className?: string }>;
   } | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
 
   const fullNameValue = useMemo(() => {
     const first = userData["firstName"]?.trim() ?? "";
@@ -561,6 +569,27 @@ function UserInfoForm({
 
     return items;
   }, [fieldConfigMap, fullNameValue, pinnedFields, userData]);
+
+  const pinnedQuickInfoEditable = useMemo(() => {
+    return pinnedFields.map((key) => {
+      if (key === NAME_PIN_KEY) {
+        return { key, label: "Name", Icon: MdPerson };
+      }
+      const field = fieldConfigMap.get(key);
+      return { key, label: field?.label ?? key, Icon: field?.icon ?? MdInfoOutline };
+    });
+  }, [fieldConfigMap, pinnedFields]);
+
+  const reorderPinnedFields = (fromKey: string, toKey: string) => {
+    if (fromKey === toKey) return;
+    const fromIndex = pinnedFields.indexOf(fromKey);
+    const toIndex = pinnedFields.indexOf(toKey);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const updated = [...pinnedFields];
+    updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, fromKey);
+    onReorderPinned(updated);
+  };
 
   const buildQuickAction = (
     icon: React.ComponentType<{ className?: string }>,
@@ -698,6 +727,52 @@ function UserInfoForm({
               <p className="mt-2 text-xs font-medium text-black/50">
                 {Math.round(completionPercentage * 100)}% Complete
               </p>
+            </div>
+            <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4">
+              <div className="flex items-center gap-2 text-black/60">
+                <MdInfoOutline />
+                <p className="text-base font-semibold">Quick Info</p>
+                <span className="text-xs text-black/40">Drag to reorder pinned items</span>
+              </div>
+              {pinnedQuickInfoEditable.length ? (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {pinnedQuickInfoEditable.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggingKey(item.key);
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", item.key);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const sourceKey = event.dataTransfer.getData("text/plain") || draggingKey;
+                        if (sourceKey) {
+                          reorderPinnedFields(sourceKey, item.key);
+                        }
+                        setDraggingKey(null);
+                      }}
+                      onDragEnd={() => setDraggingKey(null)}
+                      className="flex items-center gap-2 rounded-2xl border border-black/5 bg-gradient-to-br from-white to-gray-50 px-3 py-2 text-sm font-semibold text-purple-700 shadow-sm"
+                      aria-label={`Reorder ${item.label}`}
+                    >
+                      <MdMenu className="text-base text-black/40" />
+                      <item.Icon className="text-base" />
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-black/40">
+                  Pin fields in view mode to add Quick Info items.
+                </p>
+              )}
             </div>
           </div>
         )}
