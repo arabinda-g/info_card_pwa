@@ -35,9 +35,12 @@ import {
 import {
   clearUserData,
   getProfileImage,
+  getString,
   getUserData,
   setProfileImage,
-  setUserData
+  setString,
+  setUserData,
+  storageKeys
 } from "../utils/storage";
 
 type FieldConfig = {
@@ -115,6 +118,10 @@ export default function Home() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [userData, setLocalUserData] = useState<Record<string, string>>({});
   const [profileImage, setLocalProfileImage] = useState("");
+  const [authState, setAuthState] = useState<{
+    status: "checking" | "needsSetup" | "needsVerify" | "verified" | "unsupported";
+    error?: string;
+  }>({ status: "checking" });
   const [message, setMessage] = useState<{ text: string; tone: "ok" | "warn" | "error" } | null>(
     null
   );
@@ -124,6 +131,21 @@ export default function Home() {
     setLocalUserData(data);
     setIsViewMode(Object.values(data).some((value) => value.trim().length > 0));
     setLocalProfileImage(getProfileImage());
+  }, []);
+
+  useEffect(() => {
+    const isSupported =
+      window.isSecureContext && "PublicKeyCredential" in window && typeof PublicKeyCredential === "function";
+    if (!isSupported) {
+      setAuthState({ status: "unsupported" });
+      return;
+    }
+    const credentialId = getString(storageKeys.faceIdCredentialId);
+    if (!credentialId) {
+      setAuthState({ status: "needsSetup" });
+    } else {
+      setAuthState({ status: "needsVerify" });
+    }
   }, []);
 
   const userName = useMemo(
@@ -139,6 +161,107 @@ export default function Home() {
   const showMessage = (text: string, tone: "ok" | "warn" | "error") => {
     setMessage({ text, tone });
     window.setTimeout(() => setMessage(null), 2000);
+  };
+
+  const bufferToBase64Url = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+
+  const base64UrlToBuffer = (base64Url: string) => {
+    const padding = "====".slice((base64Url.length % 4) || 4);
+    const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+
+  const createChallenge = (length = 32) => {
+    const bytes = new Uint8Array(length);
+    crypto.getRandomValues(bytes);
+    return bytes;
+  };
+
+  const setupFaceId = async () => {
+    try {
+      setAuthState({ status: "needsSetup" });
+      const publicKey: PublicKeyCredentialCreationOptions = {
+        challenge: createChallenge(),
+        rp: { name: "Info Card" },
+        user: {
+          id: createChallenge(),
+          name: "local-user",
+          displayName: userName || "User"
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 }
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required"
+        },
+        timeout: 60000,
+        attestation: "none"
+      };
+      const credential = (await navigator.credentials.create({
+        publicKey
+      })) as PublicKeyCredential | null;
+      if (!credential) {
+        setAuthState({ status: "needsSetup", error: "Face ID setup was cancelled." });
+        return;
+      }
+      const credentialId = bufferToBase64Url(credential.rawId);
+      setString(storageKeys.faceIdCredentialId, credentialId);
+      setAuthState({ status: "verified" });
+    } catch (error) {
+      setAuthState({
+        status: "needsSetup",
+        error: error instanceof Error ? error.message : "Face ID setup failed."
+      });
+    }
+  };
+
+  const verifyFaceId = async () => {
+    try {
+      setAuthState({ status: "needsVerify" });
+      const credentialId = getString(storageKeys.faceIdCredentialId);
+      if (!credentialId) {
+        setAuthState({ status: "needsSetup" });
+        return;
+      }
+      const publicKey: PublicKeyCredentialRequestOptions = {
+        challenge: createChallenge(),
+        allowCredentials: [
+          {
+            id: base64UrlToBuffer(credentialId),
+            type: "public-key"
+          }
+        ],
+        userVerification: "required",
+        timeout: 60000
+      };
+      const assertion = (await navigator.credentials.get({
+        publicKey
+      })) as PublicKeyCredential | null;
+      if (!assertion) {
+        setAuthState({ status: "needsVerify", error: "Face ID verification was cancelled." });
+        return;
+      }
+      setAuthState({ status: "verified" });
+    } catch (error) {
+      setAuthState({
+        status: "needsVerify",
+        error: error instanceof Error ? error.message : "Face ID verification failed."
+      });
+    }
   };
 
   const handleImagePick = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,6 +383,66 @@ export default function Home() {
     setIsViewMode(false);
     showMessage("Profile cleared", "ok");
   };
+
+  if (authState.status !== "verified") {
+    return (
+      <div className="min-h-screen bg-[#F3EFEF] text-black">
+        <div className="flex min-h-screen items-center justify-center px-6">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-purple-600 p-3 text-white">
+                <MdPersonOutline className="text-xl" />
+              </div>
+              <div>
+                <p className="text-lg font-semibold">Face ID required</p>
+                <p className="text-sm text-black/50">Verify before viewing your profile</p>
+              </div>
+            </div>
+            {authState.status === "unsupported" ? (
+              <p className="mt-4 text-sm text-black/60">
+                Face ID is not available in this browser.
+              </p>
+            ) : null}
+            {authState.error ? <p className="mt-4 text-sm text-red-600">{authState.error}</p> : null}
+            <div className="mt-6 flex flex-col gap-3">
+              {authState.status === "checking" ? (
+                <button
+                  className="w-full rounded-2xl bg-purple-200 px-4 py-3 text-sm font-semibold text-purple-800"
+                  disabled
+                >
+                  Checking device security...
+                </button>
+              ) : null}
+              {authState.status === "needsSetup" ? (
+                <button
+                  className="w-full rounded-2xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white"
+                  onClick={setupFaceId}
+                >
+                  Set up Face ID
+                </button>
+              ) : null}
+              {authState.status === "needsVerify" ? (
+                <button
+                  className="w-full rounded-2xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white"
+                  onClick={verifyFaceId}
+                >
+                  Verify with Face ID
+                </button>
+              ) : null}
+              {authState.status === "unsupported" ? (
+                <button
+                  className="w-full rounded-2xl bg-black/80 px-4 py-3 text-sm font-semibold text-white"
+                  onClick={() => setAuthState({ status: "verified" })}
+                >
+                  Continue
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F3EFEF] text-black">

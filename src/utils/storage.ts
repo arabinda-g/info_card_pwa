@@ -1,7 +1,8 @@
 export const storageKeys = {
   hasSeenGetStarted: "has_seen_get_started",
   userData: "user_data",
-  profileImage: "profile_image"
+  profileImage: "profile_image",
+  faceIdCredentialId: "face_id_credential_id"
 };
 
 export function getBoolean(key: string, fallback = false) {
