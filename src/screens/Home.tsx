@@ -183,6 +183,7 @@ export default function Home() {
   const [userData, setLocalUserData] = useState<Record<string, string>>({});
   const [profileImage, setLocalProfileImage] = useState("");
   const [pinnedFields, setPinnedFields] = useState<string[]>([]);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone: "ok" | "warn" | "error" } | null>(
     null
   );
@@ -438,7 +439,7 @@ export default function Home() {
               </div>
               <button
                 className="group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-white"
-                onClick={handleClear}
+                onClick={() => setIsClearConfirmOpen(true)}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 shadow-sm">
                   <MdDeleteForever className="text-lg" />
@@ -535,6 +536,39 @@ export default function Home() {
           {message.text}
         </div>
       ) : null}
+      <Modal isOpen={isClearConfirmOpen} onClose={() => setIsClearConfirmOpen(false)}>
+        <div className="flex flex-col gap-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700">
+            <MdDeleteForever className="text-2xl" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-black/90">Clear all data?</p>
+            <p className="mt-1 text-sm text-black/60">
+              This will permanently remove your saved profile, image, and pins.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="flex-1 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold text-black/70"
+              onClick={() => setIsClearConfirmOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+              onClick={() => {
+                setIsClearConfirmOpen(false);
+                setIsDrawerOpen(false);
+                handleClear();
+              }}
+            >
+              Clear data
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
