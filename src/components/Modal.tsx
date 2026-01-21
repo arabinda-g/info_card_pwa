@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 type ModalProps = {
   isOpen: boolean;
@@ -13,13 +14,18 @@ export function Modal({ isOpen, onClose, children, chromeless = false }: ModalPr
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <button
         className="absolute inset-0 cursor-default"
@@ -52,6 +58,7 @@ export function Modal({ isOpen, onClose, children, chromeless = false }: ModalPr
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
