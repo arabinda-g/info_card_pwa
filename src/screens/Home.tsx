@@ -508,18 +508,6 @@ export default function Home() {
           }}
         />
 
-        <button
-          className="fixed bottom-16 right-6 z-20 rounded-xl bg-green-500 p-3 text-white shadow-lg shadow-black/20"
-          onClick={() => {
-            if (!hasAnyData) {
-              showMessage("Please save your information first", "warn");
-              return;
-            }
-            navigate("/qr");
-          }}
-        >
-          <MdQrCode className="text-2xl" />
-        </button>
       </div>
 
       {message ? (
@@ -725,7 +713,15 @@ function UserInfoForm({
 
   return (
     <div className="px-4 pb-16 pt-20">
-      <div className="rounded-3xl border border-purple-200/70 bg-white p-6 shadow-lg shadow-black/10">
+      <div className="relative rounded-3xl border border-purple-200/70 bg-white p-6 shadow-lg shadow-black/10">
+        <button
+          type="button"
+          aria-label="Share QR code"
+          className="absolute right-4 top-4 rounded-xl bg-green-500 p-3 text-white shadow-lg shadow-black/20"
+          onClick={onShareQR}
+        >
+          <MdQrCode className="text-2xl" />
+        </button>
         {isViewMode ? (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
