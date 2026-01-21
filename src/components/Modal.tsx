@@ -4,9 +4,10 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  chromeless?: boolean;
 };
 
-export function Modal({ isOpen, onClose, children }: ModalProps) {
+export function Modal({ isOpen, onClose, children, chromeless = false }: ModalProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -25,28 +26,32 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
         onClick={onClose}
         aria-label="Close dialog"
       />
-      <div className="relative w-full max-w-lg overflow-visible rounded-[28px] bg-gradient-to-br from-purple-600/30 via-transparent to-pink-400/30 p-[2px] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-        <div className="relative overflow-visible rounded-[26px] bg-white/95 p-8 text-black shadow-[0_12px_40px_rgba(17,24,39,0.25)] ring-1 ring-black/5">
-          <button
-            className="absolute right-4 top-4 rounded-full p-1 text-black/70 hover:text-black"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {chromeless ? (
+        <div className="relative w-full max-w-3xl overflow-visible">{children}</div>
+      ) : (
+        <div className="relative w-full max-w-lg overflow-visible rounded-[28px] bg-gradient-to-br from-purple-600/30 via-transparent to-pink-400/30 p-[2px] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+          <div className="relative overflow-visible rounded-[26px] bg-white/95 p-8 text-black shadow-[0_12px_40px_rgba(17,24,39,0.25)] ring-1 ring-black/5">
+            <button
+              className="absolute right-4 top-4 rounded-full p-1 text-black/70 hover:text-black"
+              onClick={onClose}
+              aria-label="Close"
             >
-              <path d="M6 6l12 12M18 6l-12 12" />
-            </svg>
-          </button>
-          {children}
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 6l12 12M18 6l-12 12" />
+              </svg>
+            </button>
+            {children}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

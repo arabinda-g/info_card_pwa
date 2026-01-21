@@ -909,6 +909,7 @@ function UserInfoForm({
   onClearImage
 }: UserInfoFormProps) {
   const profileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isProfileImageOpen, setIsProfileImageOpen] = useState(false);
   const [quickInfoOpen, setQuickInfoOpen] = useState<{
     key: string;
     label: string;
@@ -1043,7 +1044,16 @@ function UserInfoForm({
                 <img
                   src={profileImage}
                   alt="Profile"
-                  className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-purple-700/30"
+                  className="h-16 w-16 cursor-pointer rounded-2xl object-cover shadow-lg shadow-purple-700/30"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setIsProfileImageOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setIsProfileImageOpen(true);
+                    }
+                  }}
                 />
               ) : (
                 <div className="rounded-2xl bg-gradient-to-br from-purple-700 to-purple-400 p-4 text-white shadow-lg shadow-purple-700/30">
@@ -1254,6 +1264,19 @@ function UserInfoForm({
               })()}
             </p>
           </div>
+        ) : null}
+      </Modal>
+      <Modal
+        isOpen={isProfileImageOpen}
+        onClose={() => setIsProfileImageOpen(false)}
+        chromeless
+      >
+        {profileImage ? (
+          <img
+            src={profileImage}
+            alt="Profile"
+            className="max-h-[70vh] w-full rounded-2xl object-contain"
+          />
         ) : null}
       </Modal>
       {isViewMode && pinnedQuickInfo.length ? (
