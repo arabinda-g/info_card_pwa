@@ -899,7 +899,7 @@ function UserInfoForm({
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-black/40">
-                  Pin fields in view mode to add Quick Info items.
+                  Pin fields to add Quick Info items.
                 </p>
               )}
             </div>
@@ -1111,18 +1111,6 @@ function FieldRow({
             <p className="text-base font-semibold text-black/80">{displayValue}</p>
           </div>
           <button
-            className={`rounded-lg p-2 ${isPinned ? "bg-purple-100 text-purple-700" : "bg-black/5 text-black/50"}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (!value) return;
-              onTogglePin();
-            }}
-            aria-label={`${isPinned ? "Unpin" : "Pin"} ${field.label}`}
-            aria-pressed={isPinned}
-          >
-            {isPinned ? <MdPushPin /> : <MdOutlinePushPin />}
-          </button>
-          <button
             className="rounded-lg bg-black/5 p-2 text-black/50"
             onClick={(event) => {
               event.stopPropagation();
@@ -1163,6 +1151,17 @@ function FieldRow({
         <Icon />
       </span>
       <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1">
+        <button
+          className={`rounded-md p-1 ${
+            isPinned ? "bg-purple-100 text-purple-700" : "bg-black/5 text-black/50"
+          }`}
+          onClick={() => onTogglePin()}
+          aria-label={`${isPinned ? "Unpin" : "Pin"} ${field.label}`}
+          aria-pressed={isPinned}
+          type="button"
+        >
+          {isPinned ? <MdPushPin /> : <MdOutlinePushPin />}
+        </button>
         {value ? (
           <button
             className="rounded-md p-1 text-purple-700"
