@@ -21,7 +21,10 @@ export function QrModal({ isOpen, onClose, qrData, size = 220 }: QrModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div className="rounded-2xl bg-white p-4 shadow-lg" onClick={(event) => event.stopPropagation()}>
         <QRCode value={qrData} size={size} />
       </div>
