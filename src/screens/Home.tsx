@@ -259,6 +259,9 @@ export default function Home() {
   const [pinnedFields, setPinnedFields] = useState<string[]>([]);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportPassword, setExportPassword] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone: "ok" | "warn" | "error" } | null>(
     null
   );
@@ -352,22 +355,75 @@ export default function Home() {
   const hasAnyData = Object.values(userData).some((value) => value.trim().length > 0);
   const qrData = useMemo(() => buildVCard(userData), [userData]);
 
-  const handleExport = () => {
+  const toBase64 = (buffer: ArrayBuffer) => {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i += 1) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  const encryptPayload = async (payload: unknown, password: string) => {
+    const encoder = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const iterations = 100000;
+    const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, [
+      "deriveKey"
+    ]);
+    const key = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt"]
+    );
+    const plaintext = encoder.encode(JSON.stringify(payload));
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+    return {
+      version: 1,
+      algorithm: "AES-GCM",
+      kdf: "PBKDF2",
+      hash: "SHA-256",
+      iterations,
+      salt: toBase64(salt.buffer),
+      iv: toBase64(iv.buffer),
+      ciphertext: toBase64(ciphertext)
+    };
+  };
+
+  const handleExport = async () => {
+    const trimmedPassword = exportPassword.trim();
+    if (!trimmedPassword) {
+      showMessage("Please enter a password", "warn");
+      return;
+    }
+    setIsExporting(true);
     const data = getUserData();
     const exportPayload = {
       userData: data,
       profileImage: getProfileImage(),
       pinnedFields: getPinnedFields()
     };
-    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
-      type: "application/json"
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "profile.json";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      const encryptedPayload = await encryptPayload(exportPayload, trimmedPassword);
+      const blob = new Blob([JSON.stringify(encryptedPayload, null, 2)], {
+        type: "application/json"
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "profile.enc.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setIsExportOpen(false);
+      setExportPassword("");
+    } catch {
+      showMessage("Export failed", "error");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -487,7 +543,13 @@ export default function Home() {
             <div className="rounded-2xl bg-black/[0.03] p-2 shadow-sm">
               <button
                 className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
-                onClick={handleExport}
+                onClick={() => {
+                  if (!hasAnyData) {
+                    showMessage("Please save your information first", "warn");
+                    return;
+                  }
+                  setIsExportOpen(true);
+                }}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700 shadow-sm">
                   <MdFileUpload className="text-lg" />
@@ -601,6 +663,53 @@ export default function Home() {
         </div>
       ) : null}
       <QrModal isOpen={isQrOpen} onClose={() => setIsQrOpen(false)} qrData={qrData} />
+      <Modal
+        isOpen={isExportOpen}
+        onClose={() => {
+          if (isExporting) return;
+          setIsExportOpen(false);
+          setExportPassword("");
+        }}
+      >
+        <div className="flex flex-col gap-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+            <MdFileUpload className="text-2xl" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-black/90">Encrypt export</p>
+            <p className="mt-1 text-sm text-black/60">Enter a password to encrypt your profile data.</p>
+          </div>
+          <input
+            type="password"
+            className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black outline-none focus:ring-2 focus:ring-purple-700"
+            placeholder="Password"
+            value={exportPassword}
+            onChange={(event) => setExportPassword(event.target.value)}
+            autoFocus
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="flex-1 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold text-black/70"
+              onClick={() => {
+                if (isExporting) return;
+                setIsExportOpen(false);
+                setExportPassword("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? "Encrypting..." : "Export"}
+            </button>
+          </div>
+        </div>
+      </Modal>
       <Modal isOpen={isClearConfirmOpen} onClose={() => setIsClearConfirmOpen(false)}>
         <div className="flex flex-col gap-4 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700">
