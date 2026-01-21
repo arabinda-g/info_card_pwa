@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   MdAccountBalance,
   MdAccountBalanceWallet,
-  MdCameraAlt,
-  MdChat,
   MdClear,
   MdContentCopy,
   MdCreditCard,
@@ -18,7 +16,6 @@ import {
   MdHome,
   MdInfoOutline,
   MdLanguage,
-  MdLink,
   MdLocationCity,
   MdMenu,
   MdPayment,
@@ -30,9 +27,9 @@ import {
   MdQrCode,
   MdQrCodeScanner,
   MdSave,
-  MdShare,
-  MdVideoCall
+  MdShare
 } from "react-icons/md";
+import { FaInstagram, FaLinkedinIn, FaSkype, FaWhatsapp } from "react-icons/fa";
 import {
   clearPinnedFields,
   clearUserData,
@@ -169,11 +166,11 @@ const fieldCategories: CategoryConfig[] = [
     icon: MdShare,
     color: "#4f46e5",
     fields: [
-      { icon: MdLink, key: "linkedInUrl", label: "LinkedIn URL" },
+      { icon: FaLinkedinIn, key: "linkedInUrl", label: "LinkedIn URL" },
       { icon: MdFacebook, key: "facebook", label: "Facebook" },
-      { icon: MdVideoCall, key: "skypeId", label: "Skype ID" },
-      { icon: MdChat, key: "whatsappLink", label: "WhatsApp link to chat" },
-      { icon: MdCameraAlt, key: "instagram", label: "Instagram" }
+      { icon: FaSkype, key: "skypeId", label: "Skype ID" },
+      { icon: FaWhatsapp, key: "whatsappLink", label: "WhatsApp link to chat" },
+      { icon: FaInstagram, key: "instagram", label: "Instagram" }
     ]
   }
 ];
