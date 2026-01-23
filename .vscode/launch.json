@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Vite: Dev (Cursor Browser)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev -- --clearScreen false",
+      "serverReadyAction": {
+        "action": "openInternally",
+        "pattern": "http://localhost:5176/\\S*",
+        "uriFormat": "%s"
+      }
+    }
+  ]
+}
