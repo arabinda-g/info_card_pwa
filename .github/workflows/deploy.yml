@@ -1,0 +1,53 @@
+name: Deploy via SFTP
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Delete remote public folder contents
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          PUBLIC_DIR_PATH: ${{ vars.PUBLIC_DIR_PATH }}
+        run: |
+          lftp -e "set sftp:auto-confirm yes; set net:max-retries 2; set net:persist-retries 2; open -u ${SFTP_USER},${SFTP_PASSWORD} sftp://${SFTP_HOST}:${SFTP_PORT:-22}; rm -r ${PUBLIC_DIR_PATH}/*; rm -r ${PUBLIC_DIR_PATH}/.[!.]*; rm -r ${PUBLIC_DIR_PATH}/..?*; bye"
+
+      - name: Upload build
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          PUBLIC_DIR_PATH: ${{ vars.PUBLIC_DIR_PATH }}
+        run: |
+          lftp -e "set sftp:auto-confirm yes; set net:max-retries 2; set net:persist-retries 2; open -u ${SFTP_USER},${SFTP_PASSWORD} sftp://${SFTP_HOST}:${SFTP_PORT:-22}; mirror -R ./dist ${PUBLIC_DIR_PATH} --parallel=2; bye"
