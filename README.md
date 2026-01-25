@@ -1,5 +1,7 @@
-# info_card_pwa
-Progressive Web App
+# My ID PWA
+
+Progressive Web App  
+Website: https://id.arabinda.me/
 
 ## Architecture plan
 - Components: `App`, `InstallPrompt`, `OfflineBanner`, `UserCard`, `SkeletonCard`
