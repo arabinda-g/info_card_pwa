@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   MdAccountBalance,
   MdAccountBalanceWallet,
@@ -373,7 +372,6 @@ const defaultCategories: CategoryConfig[] = [
 ];
 
 export default function Home() {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
@@ -823,18 +821,6 @@ export default function Home() {
                   <MdQrCode className="text-lg" />
                 </span>
                 <span className="flex-1">QR Code</span>
-              </button>
-              <button
-                className="group mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-white"
-                onClick={() => {
-                  setIsDrawerOpen(false);
-                  navigate("/scan");
-                }}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 text-purple-700 shadow-sm">
-                  <MdQrCodeScanner className="text-lg" />
-                </span>
-                <span className="flex-1">Scan QR</span>
               </button>
             </div>
 
