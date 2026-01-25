@@ -1906,6 +1906,7 @@ function CategorySection({
   onAddField
 }: CategorySectionProps) {
   const Icon = resolveIcon(category.iconKey);
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   const isPinnedField = (key: string) =>
     isNameField(key) ? pinnedFields.includes(NAME_PIN_KEY) : pinnedFields.includes(key);
   return (
@@ -1953,16 +1954,21 @@ function CategorySection({
               <MdMenu />
             </button>
           ) : null}
-          <div
+          <button
+            type="button"
             className="rounded-xl p-2 text-white shadow-md"
             style={{
               background: isViewMode
                 ? `linear-gradient(135deg, ${category.color}, ${category.color}B3)`
                 : category.color
             }}
+            onClick={() => {
+              if (!isViewMode) setIsIconPickerOpen(true);
+            }}
+            aria-label={isViewMode ? `${category.title} icon` : "Choose section icon"}
           >
             <Icon className={isViewMode ? "text-xl" : "text-lg"} />
-          </div>
+          </button>
           {isViewMode ? (
             <p
               className={`font-bold ${isViewMode ? "text-lg" : "text-base"}`}
@@ -1981,18 +1987,6 @@ function CategorySection({
         </div>
         {!isViewMode ? (
           <div className="flex items-center gap-2">
-            <select
-              className="rounded-lg border border-black/10 bg-white px-2 py-2 text-xs font-semibold text-black/60 outline-none"
-              value={category.iconKey}
-              onChange={(event) => onUpdateCategoryIcon(category.id, event.target.value as IconKey)}
-              aria-label="Section icon"
-            >
-              {iconOptions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
             <span
               className="rounded-full px-3 py-1 text-xs font-semibold"
               style={{ backgroundColor: `${category.color}33`, color: category.color }}
@@ -2066,6 +2060,50 @@ function CategorySection({
           </button>
         ) : null}
       </div>
+      <Modal isOpen={isIconPickerOpen} onClose={() => setIsIconPickerOpen(false)}>
+        <div className="flex flex-col gap-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-black/5 text-black/70">
+            <Icon className="text-2xl" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-black/90">Choose section icon</p>
+            <p className="mt-1 text-sm text-black/60">Pick an icon for this section.</p>
+          </div>
+          <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+            {iconOptions.map((option) => {
+              const OptionIcon = resolveIcon(option.key);
+              const isActive = option.key === category.iconKey;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold ${
+                    isActive
+                      ? "border-purple-600 bg-purple-50 text-purple-700"
+                      : "border-black/10 bg-white text-black/70"
+                  }`}
+                  onClick={() => {
+                    onUpdateCategoryIcon(category.id, option.key);
+                    setIsIconPickerOpen(false);
+                  }}
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-base">
+                    <OptionIcon />
+                  </span>
+                  <span className="flex-1">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold text-black/70"
+            onClick={() => setIsIconPickerOpen(false)}
+          >
+            Close
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
