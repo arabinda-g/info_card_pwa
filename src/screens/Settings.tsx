@@ -30,7 +30,7 @@ export default function Settings() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "info-card-export.json";
+    anchor.download = "myid-export.json";
     anchor.click();
     URL.revokeObjectURL(url);
     setMessage("Exported JSON file.");

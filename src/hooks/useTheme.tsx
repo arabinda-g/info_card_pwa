@@ -9,7 +9,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const STORAGE_KEY = "info-card-theme";
+const STORAGE_KEY = "myid-theme";
 
 function resolveTheme(theme: Theme) {
   if (theme === "system") {

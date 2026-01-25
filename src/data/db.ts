@@ -2,7 +2,7 @@ import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
 import type { QueueItem, User } from "./types";
 
-interface InfoCardSchema extends DBSchema {
+interface MyIdSchema extends DBSchema {
   users: {
     key: string;
     value: User;
@@ -15,14 +15,14 @@ interface InfoCardSchema extends DBSchema {
   };
 }
 
-const DB_NAME = "info-card-db";
+const DB_NAME = "myid-db";
 const DB_VERSION = 2;
 
-let dbPromise: Promise<IDBPDatabase<InfoCardSchema>> | null = null;
+let dbPromise: Promise<IDBPDatabase<MyIdSchema>> | null = null;
 
 export function getDb() {
   if (!dbPromise) {
-    dbPromise = openDB<InfoCardSchema>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<MyIdSchema>(DB_NAME, DB_VERSION, {
       upgrade: async (db, oldVersion, _newVersion, transaction) => {
         if (oldVersion < 1) {
           const userStore = db.createObjectStore("users", {

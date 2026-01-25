@@ -16,9 +16,9 @@ export default defineConfig({
       ],
       manifestFilename: "manifest.webmanifest",
       manifest: {
-        name: "Info Card",
-        short_name: "InfoCard",
-        description: "A sample info card PWA with offline support.",
+        name: "MyID",
+        short_name: "MyID",
+        description: "MyID PWA with offline support.",
         start_url: "/",
         scope: "/",
         display: "standalone",
