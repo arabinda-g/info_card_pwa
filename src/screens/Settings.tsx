@@ -22,7 +22,6 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<string | null>(null);
   const [isPasskeyRegistered, setIsPasskeyRegistered] = useState(() =>
     Boolean(localStorage.getItem(PASSKEY_STORAGE_KEY))
   );
@@ -95,19 +94,6 @@ export default function Settings() {
     setError(null);
   };
 
-  const requestNotifications = async () => {
-    if (!("Notification" in window)) {
-      setNotifications("Notifications are not supported in this browser.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    setNotifications(
-      permission === "granted"
-        ? "Notifications enabled. iOS only shows notifications for installed PWAs."
-        : "Notifications denied."
-    );
-  };
-
   const registerPasskey = async () => {
     if (!("PublicKeyCredential" in window)) {
       setPasskeyStatus("Passkeys are not supported in this browser.");
@@ -169,7 +155,7 @@ export default function Settings() {
     <section className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold text-black/90">Settings</h2>
-        <p className="text-sm text-black/50">Manage theme, data, and notifications.</p>
+        <p className="text-sm text-black/50">Manage theme, data, and passkeys.</p>
       </div>
 
       <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
@@ -223,22 +209,6 @@ export default function Settings() {
             Reset local data
           </button>
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60 shadow-sm">
-        <p className="font-semibold text-black/80">Notifications (optional)</p>
-        <p className="mt-1 text-xs text-black/40">
-          iOS requires the app to be installed before prompts show.
-        </p>
-        <button
-          className="mt-3 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-black/70 hover:bg-black/[0.02]"
-          onClick={requestNotifications}
-        >
-          Request permission
-        </button>
-        {notifications ? (
-          <p className="mt-2 text-xs text-black/50">{notifications}</p>
-        ) : null}
       </div>
 
       <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60 shadow-sm">
