@@ -604,6 +604,19 @@ export default function Home() {
     }
   };
 
+  const revealLockedFieldValue = async (fieldKey: string) => {
+    const verified = await requirePasskey();
+    if (!verified) return "";
+    if (isNameField(fieldKey)) {
+      const [first, last] = await Promise.all([
+        loadFieldValueProtected("firstName"),
+        loadFieldValueProtected("lastName")
+      ]);
+      return [first, last].filter(Boolean).join(" ").trim();
+    }
+    return loadFieldValueProtected(fieldKey);
+  };
+
   const toggleSectionLock = (sectionId: string) => {
     if (!passkeyEnabled) return;
     if (lockedSections.includes(sectionId)) {
@@ -1157,6 +1170,7 @@ export default function Home() {
           onToggleSectionLock={toggleSectionLock}
           onToggleFieldLock={toggleFieldLock}
           onRevealPinnedValue={revealPinnedValue}
+          onRevealLockedValue={revealLockedFieldValue}
           onTogglePin={(key) => {
             setPinnedFields((prev) => {
               const normalized = normalizePinnedFields(prev);
@@ -1405,6 +1419,7 @@ type UserInfoFormProps = {
   onToggleSectionLock: (sectionId: string) => void;
   onToggleFieldLock: (fieldKey: string) => void;
   onRevealPinnedValue: (fieldKey: string) => Promise<string>;
+  onRevealLockedValue: (fieldKey: string) => Promise<string>;
 };
 
 function UserInfoForm({
@@ -1431,7 +1446,8 @@ function UserInfoForm({
   onClearUpiImage,
   onToggleSectionLock,
   onToggleFieldLock,
-  onRevealPinnedValue
+  onRevealPinnedValue,
+  onRevealLockedValue
 }: UserInfoFormProps) {
   const profileInputRef = useRef<HTMLInputElement | null>(null);
   const [isProfileImageOpen, setIsProfileImageOpen] = useState(false);
@@ -1884,6 +1900,7 @@ function UserInfoForm({
               lockedFields={lockedFields}
               onToggleSectionLock={onToggleSectionLock}
               onToggleFieldLock={onToggleFieldLock}
+              onRevealLockedValue={onRevealLockedValue}
               categoryCompletion={categoryCompletion(category)}
               shouldShowField={shouldShowField}
               fullNameValue={fullNameValue}
@@ -2143,7 +2160,15 @@ function UserInfoForm({
             <button
               key={`floating-${item.key}`}
               className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-xl transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-2xl"
-              onClick={() => setQuickInfoOpen(item)}
+              onClick={async () => {
+                if (item.isLocked) {
+                  const revealed = await onRevealPinnedValue(item.key);
+                  if (!revealed) return;
+                  setQuickInfoOpen({ ...item, value: revealed });
+                  return;
+                }
+                setQuickInfoOpen(item);
+              }}
               aria-label={`Open ${item.label}`}
               style={{
                 background: `linear-gradient(135deg, hsl(${(index * 47) % 360} 80% 55%), hsl(${(index * 47) % 360} 80% 40%))`
@@ -2170,6 +2195,7 @@ type CategorySectionProps = {
   lockedFields: string[];
   onToggleSectionLock: (categoryId: string) => void;
   onToggleFieldLock: (fieldKey: string) => void;
+  onRevealLockedValue: (fieldKey: string) => Promise<string>;
   categoryCompletion: number;
   shouldShowField: (key: string) => boolean;
   fullNameValue: string;
@@ -2200,6 +2226,7 @@ function CategorySection({
   lockedFields,
   onToggleSectionLock,
   onToggleFieldLock,
+  onRevealLockedValue,
   categoryCompletion,
   shouldShowField,
   fullNameValue,
@@ -2375,6 +2402,7 @@ function CategorySection({
                   isPinned={isPinnedField(field.key)}
                   onTogglePin={() => onTogglePin(field.key)}
                   onToggleLock={() => onToggleFieldLock(field.key)}
+                  onRevealLockedValue={onRevealLockedValue}
                   fullNameValue={fullNameValue}
                   upiQrImage={upiQrImage}
                   onPasteUpiImage={onPasteUpiImage}
@@ -2453,6 +2481,7 @@ type FieldRowProps = {
   isPinned: boolean;
   onTogglePin: () => void;
   onToggleLock: () => void;
+  onRevealLockedValue: (fieldKey: string) => Promise<string>;
   fullNameValue: string;
   upiQrImage: string;
   onPasteUpiImage: () => void;
@@ -2469,6 +2498,7 @@ function FieldRow({
   isPinned,
   onTogglePin,
   onToggleLock,
+  onRevealLockedValue,
   fullNameValue,
   upiQrImage,
   onPasteUpiImage,
@@ -2476,6 +2506,7 @@ function FieldRow({
 }: FieldRowProps) {
   const Icon = resolveIcon(field.iconKey);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [revealedValue, setRevealedValue] = useState("");
   const displayValue =
     field.key === "phoneNumber"
       ? formatPhoneNumber(value)
@@ -2500,7 +2531,9 @@ function FieldRow({
   const displayNode = isUrlValue(displayText)
     ? renderUrlValue(displayText, "text-black/40", "text-black/80")
     : displayText;
-  const modalDisplayValue = stripUrlPrefix(modalValue);
+  const modalLabel = isLocked && isName ? "Name" : isName ? "Name" : field.label;
+  const modalValueToShow = isLocked ? revealedValue : modalValue;
+  const modalDisplayValue = stripUrlPrefix(modalValueToShow);
 
   if (isViewMode) {
     return (
@@ -2512,7 +2545,12 @@ function FieldRow({
           onClick={() => {
             if (!canOpenModal) return;
             if (isLocked) {
-              onToggleLock();
+              void (async () => {
+                const revealed = await onRevealLockedValue(field.key);
+                if (!revealed) return;
+                setRevealedValue(revealed);
+                setIsZoomOpen(true);
+              })();
               return;
             }
             setIsZoomOpen(true);
@@ -2522,7 +2560,12 @@ function FieldRow({
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               if (isLocked) {
-                onToggleLock();
+                void (async () => {
+                  const revealed = await onRevealLockedValue(field.key);
+                  if (!revealed) return;
+                  setRevealedValue(revealed);
+                  setIsZoomOpen(true);
+                })();
                 return;
               }
               setIsZoomOpen(true);
@@ -2565,22 +2608,28 @@ function FieldRow({
             </button>
           ) : null}
         </div>
-        <Modal isOpen={isZoomOpen} onClose={() => setIsZoomOpen(false)}>
+        <Modal
+          isOpen={isZoomOpen}
+          onClose={() => {
+            setIsZoomOpen(false);
+            setRevealedValue("");
+          }}
+        >
           <div className="relative flex flex-col items-center gap-4 text-center">
             <div className="rounded-2xl bg-gradient-to-br from-purple-700 to-purple-400 p-4 text-white shadow-sm">
               <Icon className="text-3xl" />
             </div>
             <p className="text-sm font-semibold uppercase tracking-wide text-black/40">
-              {isName ? "Name" : field.label}
+              {modalLabel}
             </p>
             {modalDisplayValue ? (
               <p className="break-words text-2xl font-semibold text-black/90">
                 {field.key === "aadhaar" ? (
-                  formatAadhaarNumber(modalValue)
-                ) : isUrlValue(modalValue) ? (
+                  formatAadhaarNumber(modalValueToShow)
+                ) : isUrlValue(modalValueToShow) ? (
                   <a
                     className="hover:shadow-none hover:translate-y-0"
-                    href={getUrlHref(modalValue)}
+                    href={getUrlHref(modalValueToShow)}
                     target="_blank"
                     rel="noreferrer"
                   >

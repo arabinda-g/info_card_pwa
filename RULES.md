@@ -26,6 +26,7 @@
 - If a pinned field is locked, opening it must require passkey verification.
 - Locked fields are still clickable in View mode to trigger unlock.
 - Entering Edit mode unlocks everything for that session (no lock gating in edit).
+- Clicking locked first/last name shows the full name in the modal.
 
 ## Data Protection
 - When passkey is enabled, all values except profile image must be encrypted before storage.
