@@ -4,6 +4,7 @@ import type { User } from "../data/types";
 import { useTheme } from "../hooks/useTheme";
 
 const PASSKEY_STORAGE_KEY = "my_id_passkey_credential_id";
+const PASSKEY_STARTUP_KEY = "my_id_passkey_on_startup";
 
 function isValidUser(user: User) {
   return (
@@ -27,6 +28,9 @@ export default function Settings() {
   );
   const [passkeyStatus, setPasskeyStatus] = useState<string | null>(() =>
     localStorage.getItem(PASSKEY_STORAGE_KEY) ? "Passkey registered on this device." : null
+  );
+  const [isPasskeyRequiredOnStartup, setIsPasskeyRequiredOnStartup] = useState(() =>
+    localStorage.getItem(PASSKEY_STARTUP_KEY) === "true"
   );
 
   const toBase64Url = (buffer: ArrayBuffer) => {
@@ -147,8 +151,18 @@ export default function Settings() {
 
   const unregisterPasskey = () => {
     localStorage.removeItem(PASSKEY_STORAGE_KEY);
+    localStorage.removeItem(PASSKEY_STARTUP_KEY);
     setIsPasskeyRegistered(false);
+    setIsPasskeyRequiredOnStartup(false);
     setPasskeyStatus("Passkey removed from this device.");
+  };
+
+  const togglePasskeyOnStartup = () => {
+    setIsPasskeyRequiredOnStartup((prev) => {
+      const next = !prev;
+      localStorage.setItem(PASSKEY_STARTUP_KEY, String(next));
+      return next;
+    });
   };
 
   return (
@@ -232,6 +246,26 @@ export default function Settings() {
             </button>
           ) : null}
         </div>
+        {isPasskeyRegistered ? (
+          <label className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-black/70">
+            <span>Require passkey on app startup</span>
+            <button
+              type="button"
+              onClick={togglePasskeyOnStartup}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                isPasskeyRequiredOnStartup ? "bg-purple-600" : "bg-black/20"
+              }`}
+              aria-pressed={isPasskeyRequiredOnStartup}
+              aria-label="Toggle passkey on startup"
+            >
+              <span
+                className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition ${
+                  isPasskeyRequiredOnStartup ? "translate-x-5" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </label>
+        ) : null}
         {passkeyStatus ? (
           <p className="mt-2 text-xs text-black/50">{passkeyStatus}</p>
         ) : null}
