@@ -3,6 +3,8 @@ import { exportData, importData, clearQueue, clearUsers } from "../data/db";
 import type { User } from "../data/types";
 import { useTheme } from "../hooks/useTheme";
 
+const PASSKEY_STORAGE_KEY = "my_id_passkey_credential_id";
+
 function isValidUser(user: User) {
   return (
     typeof user.id === "string" &&
@@ -21,6 +23,21 @@ export default function Settings() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<string | null>(null);
+  const [isPasskeyRegistered, setIsPasskeyRegistered] = useState(() =>
+    Boolean(localStorage.getItem(PASSKEY_STORAGE_KEY))
+  );
+  const [passkeyStatus, setPasskeyStatus] = useState<string | null>(() =>
+    localStorage.getItem(PASSKEY_STORAGE_KEY) ? "Passkey registered on this device." : null
+  );
+
+  const toBase64Url = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  };
 
   const getExportFilename = () => {
     const now = new Date();
@@ -89,6 +106,63 @@ export default function Settings() {
         ? "Notifications enabled. iOS only shows notifications for installed PWAs."
         : "Notifications denied."
     );
+  };
+
+  const registerPasskey = async () => {
+    if (!("PublicKeyCredential" in window)) {
+      setPasskeyStatus("Passkeys are not supported in this browser.");
+      return;
+    }
+    try {
+      const hasPlatformAuth =
+        typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
+          ? await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          : true;
+      if (!hasPlatformAuth) {
+        setPasskeyStatus("No built-in authenticator available on this device.");
+        return;
+      }
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const userId = crypto.getRandomValues(new Uint8Array(16));
+      const rpId = window.location.hostname;
+      const publicKey: PublicKeyCredentialCreationOptions = {
+        challenge,
+        rp: rpId ? { name: "My ID", id: rpId } : { name: "My ID" },
+        user: {
+          id: userId,
+          name: "my-id-user",
+          displayName: "My ID User"
+        },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "preferred",
+          residentKey: "preferred"
+        },
+        attestation: "none",
+        timeout: 60000
+      };
+      const credential = (await navigator.credentials.create({
+        publicKey
+      })) as PublicKeyCredential | null;
+      if (!credential) {
+        setPasskeyStatus("Passkey registration was cancelled.");
+        return;
+      }
+      localStorage.setItem(PASSKEY_STORAGE_KEY, toBase64Url(credential.rawId));
+      setIsPasskeyRegistered(true);
+      setPasskeyStatus("Passkey registered on this device.");
+    } catch (err) {
+      const messageText =
+        err instanceof Error && err.message ? err.message : "Passkey registration failed.";
+      setPasskeyStatus(messageText);
+    }
+  };
+
+  const unregisterPasskey = () => {
+    localStorage.removeItem(PASSKEY_STORAGE_KEY);
+    setIsPasskeyRegistered(false);
+    setPasskeyStatus("Passkey removed from this device.");
   };
 
   return (
@@ -164,6 +238,32 @@ export default function Settings() {
         </button>
         {notifications ? (
           <p className="mt-2 text-xs text-black/50">{notifications}</p>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60 shadow-sm">
+        <p className="font-semibold text-black/80">Passkeys (Face ID, Touch ID)</p>
+        <p className="mt-1 text-xs text-black/40">
+          Register a passkey to use device biometrics for sign-in.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            className="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-black/70 hover:bg-black/[0.02]"
+            onClick={registerPasskey}
+          >
+            Register passkey
+          </button>
+          {isPasskeyRegistered ? (
+            <button
+              className="flex-1 rounded-xl border border-rose-500/40 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+              onClick={unregisterPasskey}
+            >
+              Remove passkey
+            </button>
+          ) : null}
+        </div>
+        {passkeyStatus ? (
+          <p className="mt-2 text-xs text-black/50">{passkeyStatus}</p>
         ) : null}
       </div>
 
