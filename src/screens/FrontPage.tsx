@@ -37,7 +37,7 @@ export default function FrontPage({ onGetStarted }: FrontPageProps) {
               show.title ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"
             }`}
           >
-            <h1 className="text-4xl font-bold text-black/90">IDSecure</h1>
+            <h1 className="text-4xl font-bold text-black/90">MyID</h1>
           </div>
           <div className="h-4" />
           <div
@@ -45,9 +45,7 @@ export default function FrontPage({ onGetStarted }: FrontPageProps) {
               show.subtitle ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0"
             }`}
           >
-            <p className="text-lg text-black/60">
-              Your Digital Identity, Protected and Verified
-            </p>
+            <p className="text-lg text-black/60">Your Digital Identity, Protected and Secure</p>
           </div>
           <div className="h-10" />
           <div
